@@ -1,0 +1,31 @@
+{
+  "1btl": {
+    "UniProt": {
+      "P62593": {
+        "identifier": "BLAT_ECOLX",
+        "mappings": [
+          {
+            "chain_id": "A",
+            "coverage": 1.0,
+            "end": {
+              "author_insertion_code": "",
+              "author_residue_number": 290,
+              "residue_number": 263
+            },
+            "entity_id": 1,
+            "identity": 0.99,
+            "start": {
+              "author_insertion_code": "",
+              "author_residue_number": 26,
+              "residue_number": 1
+            },
+            "struct_asym_id": "A",
+            "unp_end": 286,
+            "unp_start": 24
+          }
+        ],
+        "name": "BLAT_ECOLX"
+      }
+    }
+  }
+}

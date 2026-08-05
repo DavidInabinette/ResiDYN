@@ -1,0 +1,34 @@
+{
+  "canonical_table": "C:\\Users\\vira1\\OneDrive\\Documents\\ASU\\ResiDYN-1\\Output\\1BTL_A\\tables\\source_of_truth.csv",
+  "external_mappings": {
+    "uniprot_accessions": [
+      "P62593"
+    ]
+  },
+  "method": {
+    "alternate_location_policy": "highest occupancy; ties prefer blank, A, then lexical",
+    "dfi_directions": 256,
+    "dfi_spring_law": "gamma^3/d^6",
+    "rotation_trials": 8
+  },
+  "pdb_id": "1BTL",
+  "resolved_structure": {
+    "assembly": "deposited_asymmetric_unit",
+    "auth_asym_id": "A",
+    "entity_id": "1",
+    "label_asym_id": "A",
+    "model_number": 1,
+    "requested_chain": "A"
+  },
+  "sequence": {
+    "deposited_length": 263,
+    "target_length": 263,
+    "target_source": "deposited_polymer_sequence_provisional"
+  },
+  "source": {
+    "local_file": "C:\\Users\\vira1\\OneDrive\\Documents\\ASU\\ResiDYN-1\\Output\\1BTL_A\\source\\1btl.cif",
+    "origin": "https://files.rcsb.org/download/1btl.cif",
+    "sha256": "932981534e5dd6abcdd02271935e055c74dff16486c991cd610c16c95b5a2b82"
+  },
+  "status": "needs_review"
+}

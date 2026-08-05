@@ -1,0 +1,93 @@
+{
+  "dfi": {
+    "method": {
+      "cutoff": null,
+      "direction_count": 256,
+      "direction_mode": "fibonacci",
+      "gamma": 100.0,
+      "spring_law": "gamma^3/d^6"
+    },
+    "passed": true,
+    "rotation": {
+      "maximum_quartile_change_fraction": 0.0,
+      "minimum_spearman": 0.9999986806796082,
+      "passed": true,
+      "trials": [
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999993403398038,
+          "trial": 1
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999993403398038,
+          "trial": 2
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999993403398038,
+          "trial": 3
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999986806796082,
+          "trial": 4
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999993403398038,
+          "trial": 5
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999986806796082,
+          "trial": 6
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999999999999998,
+          "trial": 7
+        },
+        {
+          "quartile_change_fraction": 0.0,
+          "spearman": 0.9999986806796082,
+          "trial": 8
+        }
+      ]
+    },
+    "spectral": {
+      "inversion_threshold": 2.3894833044344505e-09,
+      "negative_mode_count": 0,
+      "passed": true,
+      "pseudoinverse_symmetry_error": 2.0816681711721685e-17,
+      "seventh_mode": 0.9488196273548704,
+      "smallest_modes": [
+        1.5205011479879583e-14,
+        2.5566970091962926e-14,
+        2.9234418620944274e-14,
+        3.096695909901911e-14,
+        4.4985792872728355e-14,
+        6.083574062216657e-14,
+        0.9488196273548704,
+        1.041894423994572,
+        1.326749752974317,
+        1.8814951488529903
+      ],
+      "zero_mode_count": 6
+    }
+  },
+  "mapping": {
+    "analysis_residues": 263,
+    "dfi_context_residues": 263,
+    "identity_matched_residues": 263,
+    "identity_mismatches": 0,
+    "observed_structure_residues": 263,
+    "target_length": 263
+  },
+  "review_items": [
+    "Biological assembly has not been explicitly selected; coordinates come from the deposited asymmetric unit.",
+    "No DMS assay or verified target sequence was supplied. This is a provisional structural source of truth."
+  ],
+  "status": "needs_review",
+  "warnings": []
+}

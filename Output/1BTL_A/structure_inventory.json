@@ -1,0 +1,16 @@
+{
+  "alternate_location_labels": [
+    "A",
+    "B"
+  ],
+  "assemblies_declared_in_source": [],
+  "atom_count_all_chains": 2032,
+  "atom_count_selected_chain": 2032,
+  "hetero_residue_names_excluding_water": [],
+  "minimum_occupancy": 0.45,
+  "nonstandard_polymer_residue_names": [],
+  "polymer_chain_pairs": [
+    "label=A;auth=A;entity=1"
+  ],
+  "water_residue_count": 0
+}

@@ -1,122 +1,244 @@
-# ProteinMPNN–DFI MVP+
+# ResiDYN
 
-This package implements the first executable Phase 1 slice of the MVP+ design:
+**Residue dynamics analysis of ProteinMPNN–DMS residuals**
 
-> Does WT residue flexibility improve held-out prediction of DMS effects beyond
-> ProteinMPNN and a small set of structural and evolutionary controls?
+ResiDYN tests whether wild-type residue flexibility helps explain where
+ProteinMPNN variant-effect predictions disagree with deep mutational scanning
+measurements after structural, evolutionary, and substitution-level controls.
 
-It deliberately separates data plumbing from external scientific computations.
-ProteinMPNN conditional probabilities, ConSurf scores, SASA, and secondary
-structure can be generated with their pinned upstream tools and imported here.
-The package itself owns mapping, validation, DFI/DCI, feature assembly, grouped
-cross-validation, quality control, and provenance.
+## The simplified Phase 1 workflow
 
-## What is implemented
-
-- deterministic PDB/mmCIF atom parsing and alternate-location selection;
-- sequence alignment to a target construct with amino-acid validation;
-- separate DFI-context and analysis masks;
-- minimal PDB inputs and a stable DFI serial-number crosswalk;
-- corrected fully connected anisotropic ENM using the legacy `gamma^3 / d^6`
-  spring law;
-- configurable perturbation directions, spectral QC, rotation QC, and
-  functional-set-to-residue DCI;
-- ProteinGym-style single-substitution ingestion;
-- ProteinMPNN conditional-log-probability import and mutation scoring;
-- ConSurf score import with explicit missingness/reliability;
-- assembly of residue and variant tables without silently changing the
-  analysis mask;
-- nested residue-grouped ridge regression for paired M0/M1 out-of-fold
-  predictions, metrics, and residue bootstrap uncertainty;
-- source hashes and run manifests.
-
-The package does **not** download data or guess unresolved choices. Pin the
-structure, DMS assay, ProteinMPNN commit/checkpoint, ConSurf run, and feature
-sources in the target YAML before interpreting results.
-
-## Install
+The smallest valid structural run requires only a PDB ID and chain:
 
 ```bash
-python -m venv .venv
+python resiDYN.py prepare 1BTL A
+```
+
+ResiDYN then:
+
+1. downloads the original PDBx/mmCIF file from RCSB PDB;
+2. resolves the supplied author or label chain;
+3. identifies the polymer entity and deposited sequence;
+4. selects coordinates deterministically;
+5. inventories missing atoms, alternate locations, ligands, waters, metals,
+   and nonstandard residues;
+6. aligns the observed structure to the deposited sequence;
+7. builds separate DFI-context and analysis masks;
+8. calculates DFI and its spectral and rotation QC;
+9. writes the Phase 1 source-of-truth table and review report.
+
+This produces a **provisional structural source of truth**. A PDB chain does not
+uniquely identify a DMS construct, so a DMS file is needed before the mapping
+can be considered validation-ready:
+
+```bash
+python resiDYN.py prepare 1BTL A \
+  --dms data/BLAT_ECOLX_Stiffler_2015.csv
+```
+
+ProteinGym files normally include `mutant`, `mutated_sequence`, and
+`DMS_score`. ResiDYN reconstructs the WT assay sequence from those rows and
+requires all reconstructed sequences to agree.
+
+You can also provide an explicit sequence:
+
+```bash
+python resiDYN.py prepare 1BTL A \
+  --dms data/tem1.csv \
+  --target-fasta data/tem1_wt.fasta
+```
+
+Optional residue-level features such as ConSurf, SASA, or secondary structure
+can be supplied in one CSV keyed by `target_position`:
+
+```bash
+python resiDYN.py prepare 1BTL A \
+  --dms data/tem1.csv \
+  --features data/tem1_residue_features.csv
+```
+
+If the feature file includes a `wt` column, ResiDYN validates its residue
+identities before merging it into the source of truth.
+
+If ResiDYN cannot make a scientifically safe decision, the run is marked
+`needs_review`. It does not silently repair structures or choose among
+ambiguous mappings.
+
+## Installation
+
+ResiDYN requires Python 3.10 or newer.
+
+```bash
+git clone https://github.com/DavidInabinette/ResiDYN.git
+cd ResiDYN
+
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-No compiled structural-biology dependency is required. The mmCIF reader is
-purposefully limited to `_atom_site`; the unmodified source mmCIF remains the
-record of truth.
+On Windows, activate the environment with:
 
-## TEM-1 first run
+```powershell
+.venv\Scripts\activate
+```
 
-Copy and edit the example:
+## Directory layout
+
+```text
+ResiDYN/
+├── README.md
+├── requirements.txt
+├── resiDYN.py
+├── src/
+│   ├── prepare.py
+│   ├── dci.py
+│   ├── mpnn.py
+│   ├── validate.py
+│   └── selftest.py
+└── Output/
+    └── tables/
+```
+
+Target-specific folders are created automatically under `Output/`:
+
+```text
+Output/1BTL_A/
+├── source/
+│   └── 1btl.cif
+├── structures/
+│   ├── dfi_context.pdb
+│   └── mpnn_backbone.pdb
+├── tables/
+│   ├── source_of_truth.csv
+│   ├── alignment.csv
+│   ├── exclusions.csv
+│   └── variants.csv
+├── request.json
+├── resolved_manifest.json
+├── structure_inventory.json
+├── phase1_qc.json
+└── phase1_report.md
+```
+
+`source_of_truth.csv` is the canonical Phase 1 output. Later stages should join
+through its stable structure and target identifiers rather than recreating
+their own residue numbering.
+
+## Offline or local structure input
+
+To use an existing mmCIF instead of downloading it:
 
 ```bash
-cp configs/targets/tem1.example.yaml configs/targets/tem1.yaml
+python resiDYN.py prepare 1BTL A --cif path/to/1btl.cif
 ```
 
-Then run the stages:
+The supplied file is copied unchanged into the target's `source/` directory
+and hashed.
+
+## Biological assemblies
+
+The default run uses the deposited asymmetric unit and records that the
+biological assembly still requires review. To request a specific RCSB
+biological assembly:
 
 ```bash
-mpnn-dfi structure configs/targets/tem1.yaml
-mpnn-dfi dfi configs/targets/tem1.yaml
-mpnn-dfi dms configs/targets/tem1.yaml
-mpnn-dfi mpnn configs/targets/tem1.yaml
-mpnn-dfi consurf configs/targets/tem1.yaml
-mpnn-dfi assemble configs/targets/tem1.yaml
-mpnn-dfi validate configs/targets/tem1.yaml
+python resiDYN.py prepare 1BTL A --assembly 1
 ```
 
-`mpnn-dfi structure` produces `residues.csv`, `dfi_input.pdb`,
-`proteinmpnn_input.pdb`, and `dfi_serial_map.csv`. Run ProteinMPNN externally
-against `proteinmpnn_input.pdb` using the exact command recorded in the YAML,
-then point `proteinmpnn.conditional_npz` to its `.npz` output.
+Assembly-expanded chain identifiers can differ from deposited chain
+identifiers. ResiDYN stops if the requested chain is no longer unique.
 
-Use `mpnn-dfi all CONFIG` only after all external input files exist.
+## ProteinMPNN scoring
 
-## Frozen conventions
-
-- Canonical key: `(structure_instance_id, label_asym_id, label_seq_id)`.
-- A residue enters the DFI context with one selected observed Cα.
-- A residue enters analysis only with selected observed N, Cα, C, and O and an
-  unambiguous, identity-matched target-sequence mapping.
-- Alternate locations: highest occupancy wins; ties prefer blank, then `A`,
-  then lexical order.
-- ProteinMPNN score:
-  `log P(mutant | WT context, X) - log P(WT | WT context, X)`.
-- DFI matrix orientation: rows are responding residues; columns are perturbed
-  residues.
-- Functional DCI direction: functional set → responding residue.
-- Every mutation at one residue stays in the same outer and inner CV fold.
-
-## DFI production decision
-
-The default config uses 256 deterministic Fibonacci-sphere directions and
-checks rotation stability. The historical seven Cartesian directions remain
-available as `direction_mode: legacy7` only for regression/plumbing comparison.
-The spring law defaults to the supplied-code behavior, `d^-6`. Both choices are
-written to the manifest and must be approved before a production analysis.
-
-## External feature contract
-
-The primary baseline expects the following after assembly:
-
-- numeric: `mpnn_delta_logp`, `sasa`, `contact_number`,
-  `consurf_score`, `coordinate_quality`, `gap_adjacent`;
-- categorical: `secondary_structure`, `wt`, `mutant`;
-- optional numeric: `ligand_distance`.
-
-`contact_number`, coordinate completeness, and gap adjacency are generated
-here. Provide SASA and secondary structure in a residue-level CSV keyed by
-`target_position`. ConSurf is imported separately. Missing numeric values are
-median-imputed and categorical values are most-frequent-imputed **inside each
-training fold**, with missingness preserved where applicable.
-
-## Tests
+ProteinMPNN is run with its upstream repository. ResiDYN imports the conditional
+probability NPZ and verifies it against the frozen target sequence:
 
 ```bash
-python -m unittest discover -s tests -v
+python resiDYN.py mpnn Output/1BTL_A \
+  --npz path/to/conditional_probs_only.npz \
+  --commit PINNED_COMMIT \
+  --checkpoint v_48_020 \
+  --command-file path/to/proteinmpnn_command.txt
 ```
 
-The tests use synthetic structures and do not require ProteinMPNN, ConSurf, or
-network access.
+The score for mutation \(WT_i \rightarrow a\) is:
 
+\[
+\Delta\log P_{i,a}
+=
+\log P(a \mid S_{\setminus i},X)
+-
+\log P(WT_i \mid S_{\setminus i},X)
+\]
+
+## Validation
+
+Once `variants.csv` contains ProteinMPNN scores and the source-of-truth table
+contains the required covariates:
+
+```bash
+python resiDYN.py validate Output/1BTL_A
+```
+
+Validation uses paired M0/M1 ridge models with:
+
+- residue-grouped outer folds;
+- residue-grouped inner tuning;
+- preprocessing fit only on training data;
+- held-out Spearman correlation and standardized MAE;
+- paired residue-level bootstrap uncertainty.
+
+M0 contains ProteinMPNN and available prespecified controls. M1 adds pctDFI.
+All mutations at one residue remain in the same fold.
+
+## Self-test
+
+Run the dependency-free structural and DFI checks:
+
+```bash
+python resiDYN.py self-test
+```
+
+Run the complete synthetic smoke test:
+
+```bash
+python resiDYN.py demo
+```
+
+The synthetic result is not biologically meaningful. It verifies parsing,
+alignment, masking, DFI/DCI, ProteinMPNN import, grouped validation, QC, and
+artifact generation.
+
+## Scientific boundaries
+
+ResiDYN tests whether flexibility predicts where ProteinMPNN errors occur and
+whether adding DFI improves held-out DMS prediction. Phase 1 alone cannot prove
+that flexibility causes those errors.
+
+DFI is constant across mutations at one residue. It can explain systematic
+position-level error but cannot independently explain differences between two
+substitutions at the same position.
+
+## Data sources
+
+- [RCSB PDB file download services](https://www.rcsb.org/docs/programmatic-access/file-download-services)
+- [PDBe SIFTS mappings](https://www.ebi.ac.uk/pdbe/api/doc/sifts.html)
+- [ProteinGym](https://github.com/OATML-Markslab/ProteinGym)
+- [ProteinMPNN](https://github.com/dauparas/ProteinMPNN)
+- [ConSurf](https://consurf.tau.ac.il/)
+
+## Citation
+
+ResiDYN is under active development. Until a formal release is archived, cite
+the repository and exact commit used:
+
+```text
+Inabinette, D. ResiDYN: Residue dynamics analysis of ProteinMPNN–DMS residuals.
+https://github.com/DavidInabinette/ResiDYN
+```
+
+## License
+
+A project license has not yet been selected.
